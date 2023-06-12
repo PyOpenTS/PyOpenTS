@@ -1,3 +1,18 @@
+# ignored folders
+fcn_test.py
+UCR/
+PyOpenTS.code-workspace
+opents/nn/models/old_FCN.py
+opents/nn/models/FCN.py
+process
+.vscode
+OPEN_UCR
+opents/data/open_ucr.json
+opents/data/test_sets.json
+opents/data/train_sets.json
+opents/data/ucr_dataset.txt
+opents/nn/models/old_FCN.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
