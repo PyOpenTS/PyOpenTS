@@ -5,10 +5,8 @@ PyOpenTS is a library specifically designed to integrate methods and modules for
 Our goal is to simplify the process of handling time series code so that users can more easily tackle various time series problems. Whether you are a data scientist, an engineer, a researcher, or someone interested in time series, PyOpenTS will be a powerful tool for you.  
 
 ## Features
-* A clean API for quickly calling and modifying time series modules  
-
-* Provides a range of methods and models for time series analysis, including but not limited to forecasting, clustering, classification, etc.  
-
+* A clean API for quickly calling and modifying time series modules
+* Provides a range of methods and models for time series analysis, including but not limited to forecasting, clustering, classification, etc. 
 * Continuous updates and improvements to meet user needs  
 
 ## Future Plans
