@@ -1,14 +1,31 @@
+# coding=utf-8
 import os
+
 import pandas as pd
 import torch
 import numpy as np
-import argparse
 
-class data_loader():
+DEFAULT_DATASETS_ROOT = "data"
+
+def get_dataset_root_path(dataset_root_path=None, dataset_name=None,
+                          datasets_root_path=DEFAULT_DATASETS_ROOT, mkdir=False):
+    if dataset_root_path is None:
+        dataset_root_path = os.path.join(datasets_root_path, dataset_name)
+    dataset_root_path = os.path.abspath(dataset_root_path)
+
+    if mkdir:
+        os.makedirs(dataset_root_path, exist_ok=True)
+    return dataset_root_path
+
+
+class Dataset(object):
     def __init__(self,
-                 dataset_name
+                 dataset_name,
+                 dataset_root_path=None
                  ):
         self.dataset_name = dataset_name
+        self.dataset_root_path = get_dataset_root_path(dataset_root_path, dataset_name)
+
     
     def load_ucr(self):
         """ The path to read the UCR file, including the path of the training file and the path of the testing file.

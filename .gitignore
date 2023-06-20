@@ -12,6 +12,7 @@ opents/data/test_sets.json
 opents/data/train_sets.json
 opents/data/ucr_dataset.txt
 opents/nn/models/old_FCN.py
+UEA/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
