@@ -14,7 +14,6 @@ Our goal is to simplify the process of handling time series code so that users c
 ```
 from opents.data import datasets
 
-
 # load ucr and generate dataloader
 ucr_dataset = datasets.UCRDataset(dataset_name="Chinatown",dataset_root_path='UCR')
 train, train_label, test, test_label = ucr_dataset.load()
