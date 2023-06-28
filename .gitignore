@@ -13,6 +13,8 @@ opents/data/train_sets.json
 opents/data/ucr_dataset.txt
 opents/nn/models/old_FCN.py
 UEA/
+opents/data/generate_datasets.py
+opents/data/new_ucr.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
