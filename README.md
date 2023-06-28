@@ -13,7 +13,7 @@ Our goal is to simplify the process of handling time series code so that users c
 * Continuous updates and improvements to meet user needs
 
 ## Installation
-Use one of the following commands below:
+Use the following commands below:
 
 ```cmd
 pip install -u opents
