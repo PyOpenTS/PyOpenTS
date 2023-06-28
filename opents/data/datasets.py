@@ -6,6 +6,7 @@ import torch
 import numpy as np
 import requests
 import zipfile 
+from scipy.io import arff
 
 DEFAULT_DATASETS_ROOT = "data"
 
@@ -52,16 +53,36 @@ def get_dataset_root_path(dataset_root_path=None, dataset_name=None, datasets_na
     return dataset_root_path
 
 
+def data_file_type(dataset_name,dataset_root_path=None, datasets_root_name=None, all_file_path=None):
+    if datasets_root_name == "UCR":
+        # Define the paths for the training and testing sets.
+        train_file_path = os.path.join(dataset_root_path, dataset_name, dataset_name + "_TRAIN.tsv")
+        test_file_path = os.path.join(dataset_root_path, dataset_name, dataset_name + "_TEST.tsv")
+        # Read the data from each file in the training set and testing set using the pandas library, which is a library for data processing.
+        train_file_df = pd.read_csv(train_file_path, sep='\t', header=None)
+        test_file_df = pd.read_csv(test_file_path, sep='\t', header=None)
+
+    elif datasets_root_name == "UEA":
+        # Define the paths for the training and testing sets.
+        train_file_path = os.path.join(dataset_root_path, dataset_name, dataset_name + "_TRAIN.ts")
+        test_file_path = os.path.join(dataset_root_path, dataset_name, dataset_name + "_TEST.ts")
+        train_data_arff = arff.loadarff(train_file_path)
+        train_file_df = pd.DataFrame(train_data_arff[0])
+        test_data_arff = arff.loadarff(test_file_path)
+        test_file_df = pd.DataFrame(test_data_arff[0])
+    return train_file_df, test_file_df
+
 class Dataset(object):
     def __init__(
             self,
             dataset_name,
             dataset_root_path=None,
-            datasets_name=None,
+            datasets_root_name=None,
             split=False
             ):
         self.dataset_name = dataset_name
-        self.dataset_root_path = get_dataset_root_path(dataset_root_path, dataset_name, datasets_name)
+        self.dataset_root_path = get_dataset_root_path(dataset_root_path, dataset_name, datasets_root_name)
+        self.datasets_root_name = datasets_root_name
         self.split = split
 
     
@@ -72,13 +93,7 @@ class Dataset(object):
         Returns:
             Add an extra dimension to the train data and test data, then return the train data, new label of train data, test data, and new label of test data.
         """
-        # Define the paths for the training and testing sets.
-        train_file_path = os.path.join(self.dataset_root_path, self.dataset_name, self.dataset_name + "_TRAIN.tsv")
-        test_file_path = os.path.join(self.dataset_root_path, self.dataset_name, self.dataset_name + "_TEST.tsv")
-
-        # Read the data from each file in the training set and testing set using the pandas library, which is a library for data processing.
-        train_file_df = pd.read_csv(train_file_path, sep='\t', header=None)
-        test_file_df = pd.read_csv(test_file_path, sep='\t', header=None)
+        train_file_df, test_file_df = data_file_type(self.dataset_name, self.dataset_root_path, self.datasets_root_name)
 
         # Create a two-dimensional tensor file from the data in the training set and testing set files.
         train_tensor = torch.tensor(train_file_df.values)
@@ -158,8 +173,8 @@ class Dataset(object):
     
 
 class TSDataset(Dataset):
-    def __init__(self, dataset_name, dataset_root_path=None, split=True):
-        super().__init__(dataset_name, dataset_root_path, split)
+    def __init__(self, dataset_name, dataset_root_path=None, datasets_name=None, split=True):
+        super().__init__(dataset_name, dataset_root_path, datasets_name, split)
 
     def load(self):
         # Call the parent class's ucr_dataset method to get the data
@@ -171,16 +186,20 @@ class TSDataset(Dataset):
     
     
 class UCRDataset(TSDataset):
-    def __init__(self, dataset_name, dataset_root_path=None, split=True):
-        super().__init__(dataset_name, dataset_root_path, split)
+    def __init__(self, dataset_name, dataset_root_path=None, datasets_name=None, split=True):
+        super().__init__(dataset_name, dataset_root_path, datasets_name, split)
+        self.datasets_name = datasets_name
 
 class UEADataset(TSDataset):
-    def __init__(self, dataset_name, dataset_root_path=None, split=True):
-        super().__init__(dataset_name, dataset_root_path, split)
+    def __init__(self, dataset_name, dataset_root_path=None, datasets_name=None, split=True):
+        super().__init__(dataset_name, dataset_root_path, datasets_name, split)
+        self.datasets_name = datasets_name
+
+
 
 class OpenDataset(Dataset):
-    def __init__(self, dataset_name, dataset_root_path=None, split=False):
-        super().__init__(dataset_name, dataset_root_path, split)
+    def __init__(self, dataset_name, dataset_root_path=None, datasets_name=None, split=False):
+        super().__init__(dataset_name, dataset_root_path, datasets_name, split)
 
     def load(self):
         # Call the parent class's open_ucr_dataset method to get the data
@@ -191,9 +210,11 @@ class OpenDataset(Dataset):
         return all_data, all_labels
     
 class OpenUCRDataset(OpenDataset):
-    def __init__(self, dataset_name, dataset_root_path=None, split=False):
-        super().__init__(dataset_name, dataset_root_path, split)
+    def __init__(self, dataset_name, dataset_root_path=None, datasets_name=None, split=False):
+        super().__init__(dataset_name, dataset_root_path, datasets_name, split)
+        self.datasets_name = datasets_name
 
 class OpenUEADataset(OpenDataset):
-    def __init__(self, dataset_name, dataset_root_path=None, split=False):
-        super().__init__(dataset_name, dataset_root_path, split)
+    def __init__(self, dataset_name, dataset_root_path=None, datasets_name=None, split=False):
+        super().__init__(dataset_name, dataset_root_path, datasets_name, split)
+        self.datasets_name = datasets_name

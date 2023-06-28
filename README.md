@@ -13,6 +13,7 @@ Our goal is to simplify the process of handling time series code so that users c
 * Continuous updates and improvements to meet user needs
 
 ## Installation
+
 Use the following commands below:
 
 ```cmd
@@ -30,7 +31,9 @@ train, train_label, test, test_label = ucr_dataset.load()
 ```
 
 ## Future Plans
+
 We will continue to update and improve PyOpenTS and gradually add some demo usage methods to show how to use this library. Please stay tuned for our updates.
 
 ## How to Get Help
+
 If you encounter any problems during use, feel free to submit them to Issues. We also welcome your suggestions for improving PyOpenTS. We hope that PyOpenTS can become a powerful assistant for you in dealing with time series problems.
