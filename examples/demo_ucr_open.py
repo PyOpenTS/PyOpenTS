@@ -1,2 +1,2 @@
-from opents.data import datasets
+from opents.datasets import datasets
 

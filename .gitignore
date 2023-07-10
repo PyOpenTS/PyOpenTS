@@ -15,6 +15,7 @@ opents/nn/models/old_FCN.py
 UEA/
 opents/data/generate_datasets.py
 opents/data/new_ucr.py
+Multivariate2018_arff.zip
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
