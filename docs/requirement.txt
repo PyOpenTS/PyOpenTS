@@ -1,2 +1,2 @@
-torch >= 2.0.1
-myst_parser >= 2.0.0
+myst_parser
+torch
