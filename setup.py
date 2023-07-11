@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='opents',
-    version='0.1.2.1',
+    version='0.1.3',
     packages=find_packages(
         exclude=[
             'demo',
