@@ -69,9 +69,8 @@ class Dataset:
             # Retrieve all label values from the test set and store them in 'test_label'.
             y_test = np.vectorize(transform.get)(test_array[:, 0])
             # if dataset's dimention is 2, we change the dimention to 3
-            if x_train.shape == 2 and x_test.shape == 2:
-                x_train = x_train[..., np.newaxis]
-                x_test = x_test[..., np.newaxis]           
+            x_train = x_train[..., np.newaxis]
+            x_test = x_test[..., np.newaxis]           
 
         elif self.datasets_root_name.lower() == 'uea':
             train_dataset_name = self.dataset_name + "_TRAIN"
