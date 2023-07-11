@@ -1,12 +1,9 @@
 # coding=utf-8
-import os
 
 import pandas as pd
 import torch
 import numpy as np
-from scipy.io import arff
 from opents.utils.data_utils import data_file_type, get_dataset_root_path
-from sklearn.preprocessing import LabelEncoder
 
 class Dataset:
     def __init__(
@@ -112,42 +109,62 @@ class Dataset:
             for UCR:add an extra dimension to the train data and test data, then return the train data, new label of train data, test data, and new label of test data.
             for UEA:return the train data, new label of train data, test data, and new label of test data.
         """
-        # Define the paths for the training and testing sets.
-        train_file_path = os.path.join(self.dataset_root_path, self.dataset_name, self.dataset_name + "_TRAIN.tsv")
-        test_file_path = os.path.join(self.dataset_root_path, self.dataset_name, self.dataset_name + "_TEST.tsv")
+        train_file_df, test_file_df = data_file_type(self.dataset_name, self.dataset_root_path, self.datasets_root_name) 
 
-        # Read the data from each file in the training set and testing set using the pandas library, which is a library for data processing.
-        train_file_df = pd.read_csv(train_file_path, sep='\t', header=None)
-        test_file_df = pd.read_csv(test_file_path, sep='\t', header=None)
+        if self.datasets_root_name.lower() == 'ucr': 
+            # merge the train and test file into a full data
+            all_data_df = pd.concat([train_file_df, test_file_df], axis=0)
         
-        # merge the train and test file into a full data
-        all_data_df = pd.concat([train_file_df, test_file_df], axis=0)
-        
-        # Create a two-dimensional tensor file from the data in the all files.
-        all_tensor = torch.tensor(all_data_df.values)
-        # train_array = np.array(train_file_df)
+            # Create a two-dimensional tensor file from the data in the all files.
+            all_tensor = torch.tensor(all_data_df.values)
+            # train_array = np.array(train_file_df)
 
-        # Here, we extract the distinct labels from each dataset.
-        all_labels = torch.unique(all_tensor[:, 0])
-        
-        # Store the labels in a dictionary, where the key is the original label and the value is the count of that label.
-        transform = {}
+            # Here, we extract the distinct labels from each dataset.
+            all_labels = torch.unique(all_tensor[:, 0])
+            
+            # Store the labels in a dictionary, where the key is the original label and the value is the count of that label.
+            transform = {}
 
-        for i, l in enumerate(all_labels):
-            transform[l.item()] = i
+            for i, l in enumerate(all_labels):
+                transform[l.item()] = i
 
-        # Convert the data into a list.
-        all_array = all_tensor.tolist()
-        all_array = np.array(all_array)
+            # Convert the data into a list.
+            all_array = all_tensor.tolist()
+            all_array = np.array(all_array)
 
-        # Retrieve the time-series data, excluding the labels. 
-        all = all_array[:, 1:].astype(np.float64)
+            # Retrieve the time-series data, excluding the labels. 
+            all = all_array[:, 1:].astype(np.float64)
 
-        # Retrieve the values of all new labels and store them in 'train_label'.
-        all_label = np.vectorize(transform.get)(all_array[:, 0])
+            # Retrieve the values of all new labels and store them in 'train_label'.
+            y_all = np.vectorize(transform.get)(all_array[:, 0])
+            
+            # Add an extra dimension to the train data and test data, then return the train data, new label of train data, test data, and new label of test data.
+            x_all = all[..., np.newaxis]
 
-        # Add an extra dimension to the train data and test data, then return the train data, new label of train data, test data, and new label of test data.
-        return all[..., np.newaxis], all_label
+        elif self.datasets_root_name.lower() == 'uea':
+            
+            all_data_df = pd.concat([train_file_df, test_file_df], axis=0)
+
+            all_data_df = all_data_df.reset_index(drop=True)
+            all_dataset_name = self.dataset_name + "_TRAIN"
+
+            # Store the train data and test data in list, and extend its dimention to 3.
+            all_array = np.array(all_data_df[all_dataset_name].tolist())
+            x_all = all_array.view((np.float64, len(all_array.dtype.names)))
+            
+            # Here, we extract the distinct labels from each dataset.
+            all_labels = torch.tensor(pd.to_numeric(all_data_df['target'], errors='coerce'))
+            y_all = torch.unique(all_labels)
+            
+            transform = {}
+
+            for i, l in enumerate(y_all):
+                transform[l.item()] = i
+            
+            # Retrieve the values of all new labels and store them in 'train_label'.
+            y_all = np.vectorize(transform.get)(all_labels)
+
+        return x_all, y_all
     
 
 class TSDataset(Dataset):
@@ -156,11 +173,11 @@ class TSDataset(Dataset):
 
     def load(self):
         # Call the parent class's ucr_dataset method to get the data
-        train_data, train_labels, test_data, test_labels = self.ts_dataset()
+        x_train, y_train, x_test, y_test = self.ts_dataset()
 
         # Modify or add any additional processing specific to TSDataset here
 
-        return train_data, train_labels, test_data, test_labels
+        return x_train, y_train, x_test, y_test 
     
     
 class UCRDataset(TSDataset):
@@ -181,11 +198,11 @@ class OpenDataset(Dataset):
 
     def load(self):
         # Call the parent class's open_ucr_dataset method to get the data
-        all_data, all_labels = self.opents_dataset()
+        x_all, y_all = self.opents_dataset()
 
         # Modify or add any additional processing specific to OpenDataset here
 
-        return all_data, all_labels
+        return x_all, y_all
     
 class OpenUCRDataset(OpenDataset):
     def __init__(self, dataset_name, dataset_root_path=None, datasets_name='UCR', split=False):
