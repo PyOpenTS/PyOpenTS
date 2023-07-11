@@ -47,7 +47,7 @@ class Dataset:
 
             # Here, we extract the distinct labels from each dataset.
             train_labels = torch.unique(train_tensor[:, 0])
-            test_labels = torch.unique       
+            test_labels = torch.unique(test_tensor[:, 0]) 
             
             # Convert the data into a list.
             train_array = train_tensor.tolist()
@@ -74,21 +74,24 @@ class Dataset:
 
         elif self.datasets_root_name.lower() == 'uea':
             train_dataset_name = self.dataset_name + "_TRAIN"
-            test_dataset_name = self.dataset_name + "_TEST"
+            test_dataset_name = self.dataset_name + "_TRAIN"
 
             # Store the train data and test data in list, and extend its dimention to 3.
             train_array = np.array(train_file_df[train_dataset_name].tolist())
             x_train = train_array.view((np.float64, len(train_array.dtype.names)))
 
-            test_array = np.array(test_file_df[train_dataset_name].tolist())
+            test_array = np.array(test_file_df[test_dataset_name].tolist())
             x_test = test_array.view((np.float64, len(test_array.dtype.names)))
 
             # Here, we extract the distinct labels from each dataset.
-            train_labels = torch.unique(torch.tensor(pd.to_numeric(train_file_df['target'], errors='coerce')))
-            test_labels = torch.unique(torch.tensor(pd.to_numeric(test_file_df['target'], errors='coerce')))
+            train_labels = torch.tensor(pd.to_numeric(train_file_df['target'], errors='coerce'))
+            train_label = torch.unique(train_labels)
+            test_labels = torch.tensor(pd.to_numeric(test_file_df['target'], errors='coerce'))
+            test_label = torch.unique(test_labels)
+            
             transform = {}
 
-            for i, l in enumerate(train_labels):
+            for i, l in enumerate(train_label):
                 transform[l.item()] = i
             
             # Retrieve the values of all new labels and store them in 'train_label'.
