@@ -171,24 +171,24 @@ class TSDataset(Dataset):
     def __init__(self, dataset_name, dataset_root_path=None, datasets_name=None, split=True):
         super().__init__(dataset_name, dataset_root_path, datasets_name, split)
 
-    def load(self):
-        # Call the parent class's ucr_dataset method to get the data
-        x_train, y_train, x_test, y_test = self.ts_dataset()
-
-        # Modify or add any additional processing specific to TSDataset here
-
-        return x_train, y_train, x_test, y_test 
-    
     
 class UCRDataset(TSDataset):
     def __init__(self, dataset_name, dataset_root_path=None, datasets_name='UCR', split=True):
         super().__init__(dataset_name, dataset_root_path, datasets_name, split)
         self.datasets_name = datasets_name
+        self.x_train, self.y_train, self.x_test, self.y_test = self.ts_dataset()
+    
+    def __iter__(self):
+        yield from (self.x_train, self.y_train, self.x_test, self.y_test)
 
 class UEADataset(TSDataset):
     def __init__(self, dataset_name, dataset_root_path=None, datasets_name='UEA', split=True):
         super().__init__(dataset_name, dataset_root_path, datasets_name, split)
         self.datasets_name = datasets_name
+        self.x_train, self.y_train, self.x_test, self.y_test = self.ts_dataset()
+    
+    def __iter__(self):
+        yield from (self.x_train, self.y_train, self.x_test, self.y_test)
 
 
 
@@ -196,20 +196,41 @@ class OpenDataset(Dataset):
     def __init__(self, dataset_name, dataset_root_path=None, datasets_name=None, split=False):
         super().__init__(dataset_name, dataset_root_path, datasets_name, split)
 
-    def load(self):
-        # Call the parent class's open_ucr_dataset method to get the data
-        x_all, y_all = self.opents_dataset()
-
-        # Modify or add any additional processing specific to OpenDataset here
-
-        return x_all, y_all
     
 class OpenUCRDataset(OpenDataset):
     def __init__(self, dataset_name, dataset_root_path=None, datasets_name='UCR', split=False):
         super().__init__(dataset_name, dataset_root_path, datasets_name, split)
         self.datasets_name = datasets_name
 
+        self.x_all, self.y_all = self.opents_dataset()
+
+    def __iter__(self):
+        yield from (self.x_all, self.y_all)
+
 class OpenUEADataset(OpenDataset):
     def __init__(self, dataset_name, dataset_root_path=None, datasets_name='UEA', split=False):
         super().__init__(dataset_name, dataset_root_path, datasets_name, split)
         self.datasets_name = datasets_name
+        self.x_all, self.y_all = self.opents_dataset()
+
+    def __iter__(self):
+        yield from (self.x_all, self.y_all)
+
+
+# class SplitOpenDataset:
+#     def __init__(self, x_all, y_all, percentage=None, random_state=42):
+#         self.x_all = x_all
+#         self.y_all = y_all
+#         self.percentage = percentage
+#         self.random_state = random_state
+
+#     def split(self):
+#         # Get unique labels and calculate the number of labels to select for the test set
+#         y_all_unique = np.unique(self.y_all)
+#         open_y_all_num = int(len(y_all_unique) * self.percentage)
+#         if open_y_all_num == 0:
+#             print("the number of open label data is 0, please change the percentage.")
+
+#         select_y_all = random.sample(list(y_all_unique), open_y_all_num)
+        
+#         return y_all_num

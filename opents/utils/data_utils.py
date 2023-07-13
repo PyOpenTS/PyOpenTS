@@ -75,3 +75,13 @@ def data_file_type(dataset_name,dataset_root_path=None, datasets_root_name=None,
         test_file_df = pd.DataFrame(test_data_arff[0])
     return train_file_df, test_file_df
 
+
+# class SeperateOpen():
+#     def __init__(
+#             self,
+#             dataset_name,
+#             dataset_root_path=None,
+#             datasets_root_name=None,
+#             split=False
+#             ):
+        
