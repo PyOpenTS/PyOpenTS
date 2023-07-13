@@ -16,6 +16,7 @@ UEA/
 opents/data/generate_datasets.py
 opents/data/new_ucr.py
 Multivariate2018_arff.zip
+test.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

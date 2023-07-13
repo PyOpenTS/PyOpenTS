@@ -3,6 +3,9 @@ import requests
 import zipfile 
 import pandas as pd
 from scipy.io import arff
+import numpy as np
+import random
+from sklearn.model_selection import train_test_split
 
 DEFAULT_DATASETS_ROOT = "data"
 
@@ -76,12 +79,27 @@ def data_file_type(dataset_name,dataset_root_path=None, datasets_root_name=None,
     return train_file_df, test_file_df
 
 
-# class SeperateOpen():
-#     def __init__(
-#             self,
-#             dataset_name,
-#             dataset_root_path=None,
-#             datasets_root_name=None,
-#             split=False
-#             ):
-        
+def split_train_test(x_all, y_all, train_percentage=0.5, open_percentage=0.5, open_random=42, train_random_state=42):
+
+    # Get unique labels and calculate the number of labels to select for the test set
+    y_unique = np.unique(y_all)
+    y_open_nums = int(len(y_unique) * open_percentage)
+
+    # if the number of y_open is 0, it indicates that the dataset has not open data.
+    if y_open_nums == 0:
+        raise ValueError("The number of open label data is 0, please change the percentage.")
+
+    # fix the seed of random
+    random.seed(open_random)
+
+    # choose the y_open and y_not_open in y_all. the labels in the y_open and y_not_open are unique. 
+    y_open_select = random.sample(list(y_unique), y_open_nums)
+    y_not_open = [_ for _ in y_unique if _ not in y_open_select]
+
+    x_train, x_test, y_train, y_test = train_test_split(x_all, y_all, train_size=train_percentage,random_state=train_random_state, stratify=y_all)
+
+    mask = np.isin(y_train, y_open_select, invert=True)
+    x_train = x_train[mask]
+    y_train = y_train[mask]
+
+    return x_train, y_train, x_test, y_test

@@ -2,5 +2,4 @@
 
 from opents.datasets import OpenUCRDataset
 
-x_all, y_all = OpenUCRDataset(dataset_name='Chinatown', dataset_root_path='UCR')
-print(x_all)
+x_train, y_train, x_test, y_test = OpenUCRDataset(dataset_name='CBF', dataset_root_path='UCR', train_percentage=0.5, open_percentage=0.5)

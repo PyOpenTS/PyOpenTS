@@ -3,7 +3,7 @@
 import pandas as pd
 import torch
 import numpy as np
-from opents.utils.data_utils import data_file_type, get_dataset_root_path
+from opents.utils.data_utils import data_file_type, get_dataset_root_path, split_train_test
 
 class Dataset:
     def __init__(
@@ -11,7 +11,10 @@ class Dataset:
             dataset_name,
             dataset_root_path=None,
             datasets_root_name=None,
-            split=False
+            split=False,
+            train_percentage=None,
+            open_percentage=None,
+            random_state=None
             ):
         """_summary_
 
@@ -25,7 +28,9 @@ class Dataset:
         self.dataset_root_path = get_dataset_root_path(dataset_root_path, dataset_name, datasets_root_name)
         self.datasets_root_name = datasets_root_name
         self.split = split
-
+        self.train_percentage = train_percentage
+        self.open_percentage = open_percentage
+        self.random_state = random_state
     
     def ts_dataset(self):
         """ The path to read the UCR or UEA file, including the path of the training file and the path of the testing file.
@@ -117,7 +122,6 @@ class Dataset:
         
             # Create a two-dimensional tensor file from the data in the all files.
             all_tensor = torch.tensor(all_data_df.values)
-            # train_array = np.array(train_file_df)
 
             # Here, we extract the distinct labels from each dataset.
             all_labels = torch.unique(all_tensor[:, 0])
@@ -140,6 +144,8 @@ class Dataset:
             
             # Add an extra dimension to the train data and test data, then return the train data, new label of train data, test data, and new label of test data.
             x_all = all[..., np.newaxis]
+
+            x_train, y_train, x_test, y_test = split_train_test(x_all=x_all, y_all=y_all, train_percentage=self.train_percentage, open_percentage=self.open_percentage)
 
         elif self.datasets_root_name.lower() == 'uea':
             
@@ -164,17 +170,20 @@ class Dataset:
             # Retrieve the values of all new labels and store them in 'train_label'.
             y_all = np.vectorize(transform.get)(all_labels)
 
-        return x_all, y_all
+            x_train, y_train, x_test, y_test = split_train_test(x_all=x_all, y_all=y_all, train_percentage=self.train_percentage, open_percentage=self.open_percentage)
+
+        return  x_train, y_train, x_test, y_test
+
     
 
 class TSDataset(Dataset):
-    def __init__(self, dataset_name, dataset_root_path=None, datasets_name=None, split=True):
-        super().__init__(dataset_name, dataset_root_path, datasets_name, split)
+    def __init__(self, dataset_name, dataset_root_path=None, datasets_name=None):
+        super().__init__(dataset_name, dataset_root_path, datasets_name)
 
     
 class UCRDataset(TSDataset):
-    def __init__(self, dataset_name, dataset_root_path=None, datasets_name='UCR', split=True):
-        super().__init__(dataset_name, dataset_root_path, datasets_name, split)
+    def __init__(self, dataset_name, dataset_root_path=None, datasets_name='UCR'):
+        super().__init__(dataset_name, dataset_root_path, datasets_name)
         self.datasets_name = datasets_name
         self.x_train, self.y_train, self.x_test, self.y_test = self.ts_dataset()
     
@@ -182,8 +191,8 @@ class UCRDataset(TSDataset):
         yield from (self.x_train, self.y_train, self.x_test, self.y_test)
 
 class UEADataset(TSDataset):
-    def __init__(self, dataset_name, dataset_root_path=None, datasets_name='UEA', split=True):
-        super().__init__(dataset_name, dataset_root_path, datasets_name, split)
+    def __init__(self, dataset_name, dataset_root_path=None, datasets_name='UEA'):
+        super().__init__(dataset_name, dataset_root_path, datasets_name)
         self.datasets_name = datasets_name
         self.x_train, self.y_train, self.x_test, self.y_test = self.ts_dataset()
     
@@ -193,44 +202,26 @@ class UEADataset(TSDataset):
 
 
 class OpenDataset(Dataset):
-    def __init__(self, dataset_name, dataset_root_path=None, datasets_name=None, split=False):
-        super().__init__(dataset_name, dataset_root_path, datasets_name, split)
+    def __init__(self, dataset_name, dataset_root_path=None, datasets_name=None, split=True, train_percentage=None,open_percentage=None, random_state=None):
+        super().__init__(dataset_name, dataset_root_path, datasets_name, split, train_percentage, open_percentage, random_state)
 
     
 class OpenUCRDataset(OpenDataset):
-    def __init__(self, dataset_name, dataset_root_path=None, datasets_name='UCR', split=False):
-        super().__init__(dataset_name, dataset_root_path, datasets_name, split)
+    def __init__(self, dataset_name, dataset_root_path=None, datasets_name='UCR', split=True, train_percentage=None,open_percentage=None, random_state=None):
+        super().__init__(dataset_name, dataset_root_path, datasets_name, split, train_percentage, open_percentage, random_state)
         self.datasets_name = datasets_name
 
-        self.x_all, self.y_all = self.opents_dataset()
-
+        self.x_train, self.y_train, self.x_test, self.y_test = self.opents_dataset()
+    
     def __iter__(self):
-        yield from (self.x_all, self.y_all)
+        yield from (self.x_train, self.y_train, self.x_test, self.y_test)
 
 class OpenUEADataset(OpenDataset):
-    def __init__(self, dataset_name, dataset_root_path=None, datasets_name='UEA', split=False):
-        super().__init__(dataset_name, dataset_root_path, datasets_name, split)
+    def __init__(self, dataset_name, dataset_root_path=None, datasets_name='UEA', split=True, train_percentage=None,open_percentage=None, random_state=None):
+        super().__init__(dataset_name, dataset_root_path, datasets_name, split, train_percentage, open_percentage, random_state)
         self.datasets_name = datasets_name
-        self.x_all, self.y_all = self.opents_dataset()
 
+        self.x_train, self.y_train, self.x_test, self.y_test = self.opents_dataset()
+    
     def __iter__(self):
-        yield from (self.x_all, self.y_all)
-
-
-# class SplitOpenDataset:
-#     def __init__(self, x_all, y_all, percentage=None, random_state=42):
-#         self.x_all = x_all
-#         self.y_all = y_all
-#         self.percentage = percentage
-#         self.random_state = random_state
-
-#     def split(self):
-#         # Get unique labels and calculate the number of labels to select for the test set
-#         y_all_unique = np.unique(self.y_all)
-#         open_y_all_num = int(len(y_all_unique) * self.percentage)
-#         if open_y_all_num == 0:
-#             print("the number of open label data is 0, please change the percentage.")
-
-#         select_y_all = random.sample(list(y_all_unique), open_y_all_num)
-        
-#         return y_all_num
+        yield from (self.x_train, self.y_train, self.x_test, self.y_test)
