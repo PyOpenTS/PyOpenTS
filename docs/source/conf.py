@@ -13,7 +13,6 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../../'))
 import sphinx_rtd_theme
-import myst_parser
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -21,23 +20,17 @@ import myst_parser
 project = 'PyOpenTS'
 copyright = '2023, hushuguo'
 author = 'hushuguo'
-release = '0.1'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['myst_parser',
-              'sphinx.ext.autodoc',
-              ]
-
-
-
-source_suffix = {
-    '.rst': 'restructuredtext',
-    '.md': 'markdown',
-}
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon'
+]
 
 templates_path = ['_templates']
+
 exclude_patterns = []
 
 
@@ -46,4 +39,7 @@ exclude_patterns = []
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = 'sphinx_rtd_theme'
+html_show_sourcelink = False
+master_doc = 'index'
+
 html_static_path = ['_static']

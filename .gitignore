@@ -17,6 +17,7 @@ opents/data/generate_datasets.py
 opents/data/new_ucr.py
 Multivariate2018_arff.zip
 test.py
+best_logits.pt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

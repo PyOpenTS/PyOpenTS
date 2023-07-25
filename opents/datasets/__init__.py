@@ -1,1 +1,1 @@
-from .datasets import UCRDataset, UEADataset, OpenUCRDataset, OpenUEADataset
+from .datasets import TSDataset
