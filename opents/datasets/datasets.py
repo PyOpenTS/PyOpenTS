@@ -6,7 +6,6 @@ import numpy as np
 from opents.utils.data_utils import data_file_type, get_dataset_root_path
 from torch import cat
 
-
 class Dataset:
     def __init__(
             self,
@@ -120,7 +119,7 @@ class TSDataset(Dataset):
     ------------
     dataset_name (str): Name of the dataset
     dataset_root_path (str, optional): Root path of the dataset. Default is None.
-    datasets_name (str, optional): Name of the datasets. Default is None.
+    datasets_name (str, optional): Name of the Root datasets. eg:ucr or uea. Default is None.
     x_train (numpy.ndarray): The training data.
     y_train (numpy.ndarray): The labels of the training data.
     x_test (numpy.ndarray): The testing data.
@@ -141,4 +140,5 @@ class TSDataset(Dataset):
     
     def load(self):
         return self.x_train, self.y_train, self.x_test, self.y_test
-    
+
+        

@@ -7,6 +7,7 @@ import numpy as np
 import random
 from sklearn.model_selection import train_test_split
 import torch
+from sklearn.preprocessing import LabelEncoder
 
 DEFAULT_DATASETS_ROOT = "data"
 
@@ -131,9 +132,11 @@ class RandomSplitOpenDataset:
             y_train,
             x_test,
             y_test,
-            train_size_rate=0.5,
+            train_size_rate=0.3,
+            test_size_rate=0.3,
             open_label_rate=0.5,
             train_random_state=42,
+            test_random_state=42,
             open_random_state=42
             ):
         
@@ -142,8 +145,10 @@ class RandomSplitOpenDataset:
         self.x_test = x_test
         self.y_test = y_test
         self.train_size_rate = train_size_rate
+        self.test_size_rate = test_size_rate
         self.open_label_rate = open_label_rate
         self.train_random_state = train_random_state
+        self.test_random_state = test_random_state
         self.open_random_state = open_random_state
         
         self.x_train, self.y_train, self.x_test, self.y_test = x_train.numpy(), y_train.numpy(), x_test.numpy(), y_test.numpy()
@@ -165,19 +170,93 @@ class RandomSplitOpenDataset:
         if y_open_nums == 0:
             raise ValueError("The number of open label data is 0, please change the percentage.")
 
-        # fix the seed of random
         random.seed(self.train_random_state)
-
         # choose the y_open and unselected_labels in y_all. the labels in the y_open and unselected_labels are unique. 
-        selected_open_labels = random.sample(list(unique_labels), y_open_nums)
-        unselected_labels = [_ for _ in unique_labels if _ not in selected_open_labels]
+        self.selected_open_labels = random.sample(list(unique_labels), y_open_nums)
+        unselected_labels = [_ for _ in unique_labels if _ not in self.selected_open_labels]
 
-        x_train, x_test, y_train, y_test = train_test_split(self.all_features, self.all_labels, train_size=self.train_size_rate, random_state=self.train_random_state, stratify=self.all_labels)
-
-        mask = np.isin(y_train, selected_open_labels, invert=True)
-        x_train = x_train[mask]
-        y_train = y_train[mask]
+        self.x_train_val, x_test, self.y_train_val, y_test = train_test_split(self.all_features, self.all_labels, train_size= 1 - self.test_size_rate, random_state=self.train_random_state, stratify=self.all_labels)
         
-        x_train, y_train, x_test, y_test = torch.tensor(x_train), torch.tensor(y_train).long(), torch.tensor(x_test), torch.tensor(y_test).long()
+        x_train, x_val, y_train, y_val = train_test_split(self.x_train_val, self.y_train_val, train_size=self.train_size_rate / (1 - self.test_size_rate), random_state=self.test_random_state, stratify=self.y_train_val)
 
-        return x_train, y_train, x_test, y_test
+        train_mask = np.isin(y_train, self.selected_open_labels, invert=True)
+        val_mask = np.isin(y_val, self.selected_open_labels, invert=True)
+        x_train, x_val = x_train[train_mask], x_val[val_mask]
+        y_train, y_val = y_train[train_mask], y_val[val_mask]
+        
+        x_train, y_train, x_val, y_val, x_test, y_test = torch.tensor(x_train), torch.tensor(y_train).long(), torch.tensor(x_val), torch.tensor(y_val).long(), torch.tensor(x_test), torch.tensor(y_test).long()
+
+        return x_train, y_train, x_val, y_val, x_test, y_test
+        
+class RandomSplitOpenAllDataset(RandomSplitOpenDataset):
+    def __init__(self, x_train, y_train, x_test, y_test, train_size_rate, open_label_rate, train_random_state=42, open_random_state=42):
+        super().__init__(x_train, y_train, x_test, y_test, train_size_rate, open_label_rate, train_random_state, open_random_state)
+    
+    def load(self):
+        x_train, y_train, x_test, y_test = super().load()
+        x_train, y_train, x_test, y_test = x_train.numpy(), y_train.numpy(), x_test.numpy(), y_test.numpy() 
+
+        mask = np.isin(y_test, self.selected_open_labels, invert=True)
+        unmask = ~mask
+        x_test, last_x_test = x_test[mask], x_test[unmask]
+        y_test, last_y_test = y_test[mask], y_test[unmask]
+
+
+        x_train, y_train, x_test, y_test, last_x_test, last_y_test = torch.tensor(x_train), torch.tensor(y_train).long(), torch.tensor(x_test), torch.tensor(y_test).long(), torch.tensor(last_x_test), torch.tensor(last_y_test).long()
+        
+        return x_train, y_train, x_test, y_test, last_x_test, last_y_test
+
+
+def relabel_from_zero(*args):
+    
+    if len(args) > 2:
+        raise ValueError("Too many arguments. This function expects 1 or 2 arguments.") 
+    encoder = LabelEncoder()
+
+    if len(args) == 1:
+        labels = args[0].numpy()
+        labels = encoder.fit_transform(labels)
+        labels = torch.tensor(labels).long()
+        return labels
+    if len(args) == 2:
+        y_train, y_test = args[0].numpy(), args[1].numpy()
+        encoder.fit(np.concatenate([y_train, y_test]))
+        y_train = encoder.transform(y_train)
+        y_test = encoder.transform(y_test)
+        y_train, y_test = torch.tensor(y_train).long(),torch.tensor(y_test).long()
+        return y_train, y_test
+
+def preprocess_test_labels(y_test, y_train, real_label):
+    """
+    Function to preprocess test labels: 
+    replace labels in `real_label` with the corresponding labels in y_train, 
+    and assign new labels to the rest
+
+    Args:
+    y_test (torch.Tensor): Test labels to be preprocessed
+    y_train (torch.Tensor): Training labels used for mapping
+    real_label (torch.Tensor): Real labels in training set
+
+    Returns:
+    torch.Tensor: Preprocessed test labels
+    """
+
+    # Convert to list for easy manipulation
+    real_label_list = real_label.tolist()
+    y_train_unique = torch.unique(y_train).tolist()
+
+    # Create a mapping from real_label to the corresponding y_train labels
+    label_mapping = {real_label_list[i]: y_train_unique[i] for i in range(len(real_label_list))}
+
+    # Maximum label in y_train
+    max_train_label = max(y_train_unique)
+
+    def relabel_test(y):
+        if y.item() in real_label_list:
+            return label_mapping[y.item()]
+        else:
+            return max_train_label + 1
+
+    y_test_preprocessed = torch.tensor([relabel_test(y) for y in y_test])
+
+    return y_test_preprocessed

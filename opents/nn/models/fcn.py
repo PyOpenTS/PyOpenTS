@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from opents.nn.components.components import Lambda, Residual, InitializedLinear, InitializedConv1d
 
 class FCN(nn.Module):
     """
@@ -28,30 +29,36 @@ class FCN(nn.Module):
         self.num_cnns = num_cnns
         self.kernel = kernel_size
         self.stride = stride
-        self.dropout = dropout
-        self.padding = padding
+        self.dropout = nn.Dropout(dropout)
 
+        padding_val="same" if stride == 1 else self.kernel // 2
         self.convs = nn.ModuleList()
 
+        self.convs.append(Lambda(lambda x: torch.permute(x, [0, 2, 1])))
+
         # first cnns layer
-        self.convs.append(nn.Conv1d(self.in_channels, self.unit_list[0], kernel_size=self.kernel, stride=self.stride, padding=self.padding if self.stride == 1 else self.kernel // 2))
+        self.convs.append(InitializedConv1d(self.in_channels, self.unit_list[0], kernel_size=self.kernel, stride=self.stride, padding=padding_val))
         self.convs.append(nn.ReLU())
-        self.convs.append(nn.Dropout(self.dropout))
+        self.convs.append(self.dropout)
 
         # other cnns layers: except first cnns layer
         for unit_num in range(len(self.unit_list)):
             for cnns_num in range(self.num_cnns):
-                    self.convs.append(Residual(nn.Conv1d(self.unit_list[unit_num], self.unit_list[unit_num], kernel_size=self.kernel, padding=self.padding)))
+                    self.convs.append(Residual(InitializedConv1d(self.unit_list[unit_num], self.unit_list[unit_num], kernel_size=self.kernel, padding=padding_val)))
                     self.convs.append(nn.ReLU())
-                    self.convs.append(nn.Dropout(self.dropout))
+                    self.convs.append(self.dropout)
             if unit_num == len(self.unit_list) - 1:
                  break
-            self.convs.append(nn.Conv1d(self.unit_list[unit_num], self.unit_list[unit_num + 1], kernel_size=self.kernel, stride=self.stride, padding=self.padding))
+            self.convs.append(InitializedConv1d(self.unit_list[unit_num], self.unit_list[unit_num + 1], kernel_size=self.kernel, stride=self.stride, padding=padding_val))
             self.convs.append(nn.ReLU())
-            self.convs.append(nn.Dropout(self.dropout))
-        
-        # the last linear layer
-        self.fc = nn.Linear(unit_list[-1] * 2, num_classes)
+            self.convs.append(self.dropout)
+
+        self.convs.append(Lambda(lambda x: torch.permute(x, [0, 2, 1])))
+        self.convs.append(Lambda(lambda x: torch.concat([x.mean(dim=1), x.max(dim=1)[0]], dim=-1)))
+        self.convs.append(self.dropout) 
+
+        # add the last linear layer
+        self.convs.append(InitializedLinear(unit_list[-1] * 2, num_classes))
     
     def forward(self, inputs):
         """
@@ -64,42 +71,6 @@ class FCN(nn.Module):
             torch.Tensor: Output tensor after passing through the network.
         """
         x = inputs
-        x = x.transpose(1, 2)
-        
         for layer in self.convs:
             x = layer(x)
-        x = x.transpose(1, 2)
-
-        # last layer
-        x = torch.cat([x.mean(dim=1), x.max(dim=1)[0]], dim=-1)
-        x = nn.Dropout(0.5)(x)
-        x = self.fc(x)
-
         return x
-
-class Residual(nn.Module):
-    """
-    Implements the Residual Block for the FCN.
-    """
-    def __init__(self, model):
-        """
-        Constructor for the Residual class.
-
-        Args:
-            model (nn.Module): The base model/block on which residual connections will be used.
-        """
-        super().__init__()
-        self.model = model
-
-    def forward(self, x):
-        """
-        Defines the computation performed at every call.
-
-        Args:
-            x (torch.Tensor): Input tensor.
-
-        Returns:
-            torch.Tensor: Output tensor after adding the input tensor and the output from the base model/block.
-        """
-        h = self.model(x)
-        return x + h

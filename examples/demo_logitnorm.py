@@ -9,7 +9,7 @@ from tqdm import tqdm
 device = torch.device('cuda:9' if torch.cuda.is_available else 'cpu')
 
 # load the dataset from ucr
-x_train, y_train, x_test, y_test = TSDataset(dataset_name='ElectricDevices', dataset_root_path='UCR', datasets_name='ucr').load()
+x_train, y_train, x_test, y_test = TSDataset(dataset_name='SmoothSubspace', dataset_root_path='UCR', datasets_name='ucr').load()
 
 # x_train, y_train, x_test, y_test = RandomSplitOpenDataset(x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test, train_size_rate=0.5, open_label_rate=0.3).load()
 
