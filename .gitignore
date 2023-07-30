@@ -18,7 +18,8 @@ opents/data/new_ucr.py
 Multivariate2018_arff.zip
 test.py
 *.pt
-
+example/demo_logitnorm_modified.py
+example/demo_logitnorm_others.py
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
