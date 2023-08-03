@@ -164,7 +164,7 @@ class RandomSplitOpenDataset:
         self.all_labels = np.concatenate([self.y_train, self.y_test], axis=0)
         # Get unique labels and calculate the number of labels to select for the test set
         unique_labels = np.unique(self.all_labels)
-        y_open_nums = int(len(unique_labels) * self.train_size_rate)
+        y_open_nums = int(len(unique_labels) * self.open_label_rate)
 
         # if the number of y_open is 0, it indicates that the dataset has not open data.
         if y_open_nums == 0:

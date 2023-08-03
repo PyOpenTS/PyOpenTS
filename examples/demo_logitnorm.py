@@ -20,7 +20,7 @@ cudnn.benchmark = True
 
 # args
 dataset_name = 'CBF'
-lr = 0.001
+lr = 0.005
 criterion_name = "LogitNorm"
 
 # load the dataset from ucr

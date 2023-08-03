@@ -57,63 +57,63 @@ metric_dict = {
 }
 
 # main loop
-num_epochs = 10000
+num_epochs = 1000
 best_accuracy = 0.0
 best_cls_loss = float('inf')
 
-# for epoch in tqdm(range(num_epochs)):
+for epoch in tqdm(range(num_epochs)):
 
-#     model.train()
-#     for batch_inputs, batch_labels in train_dataloader:
-#         batch_inputs = batch_inputs.to(device)
-#         batch_labels = batch_labels.to(device)
+    model.train()
+    for batch_inputs, batch_labels in train_dataloader:
+        batch_inputs = batch_inputs.to(device)
+        batch_labels = batch_labels.to(device)
 
-#         logit = model(batch_inputs)
-#         cls_losses = criterion(logit, batch_labels)
-#         cls_loss = cls_losses.mean()
+        logit = model(batch_inputs)
+        cls_losses = criterion(logit, batch_labels)
+        cls_loss = cls_losses.mean()
 
-#         l2_loss = 0.0
-#         for name, param in model.named_parameters():
-#             if "weight" in name:
-#                 l2_loss += (param ** 2).sum() * 0.5
+        l2_loss = 0.0
+        for name, param in model.named_parameters():
+            if "weight" in name:
+                l2_loss += (param ** 2).sum() * 0.5
             
-#         loss = cls_loss + l2_loss * 1e-5
+        loss = cls_loss + l2_loss * 1e-5
 
-#         optimizer.zero_grad()
-#         loss.backward()
-#         optimizer.step()
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
     
-#     if epoch % 100 == 0:
+    if epoch % 100 == 0:
 
-#         model.eval()
-#         with torch.no_grad():
+        model.eval()
+        with torch.no_grad():
 
-#             metric_dict['accuracy'].reset()
+            metric_dict['accuracy'].reset()
 
-#             for batch_inputs, batch_labels in val_dataloader:
-#                 batch_inputs = batch_inputs.to(device)
-#                 batch_labels = batch_labels.to(device)
+            for batch_inputs, batch_labels in val_dataloader:
+                batch_inputs = batch_inputs.to(device)
+                batch_labels = batch_labels.to(device)
 
-#                 logit = model(batch_inputs)
+                logit = model(batch_inputs)
 
-#                 preds = logit.argmax(dim=-1)
+                preds = logit.argmax(dim=-1)
 
-#                 test_cls_loss = criterion(logit, batch_labels)
-#                 metric_dict["accuracy"](preds, batch_labels)
-#                 metric_dict["loss"](test_cls_loss)
+                test_cls_loss = criterion(logit, batch_labels)
+                metric_dict["accuracy"](preds, batch_labels)
+                metric_dict["loss"](test_cls_loss)
 
-#                 accuracy = metric_dict["accuracy"].compute().detach().cpu().numpy()
-#                 test_cls_loss = metric_dict["loss"].compute().detach().cpu().numpy()
+                accuracy = metric_dict["accuracy"].compute().detach().cpu().numpy()
+                test_cls_loss = metric_dict["loss"].compute().detach().cpu().numpy()
 
-#         if accuracy >= best_accuracy:
-#             if accuracy > best_accuracy or test_cls_loss < best_cls_loss:
-#                 best_cls_loss = test_cls_loss
-#                 best_accuracy = accuracy 
-#                 torch.save(model.state_dict(), f'crop_best_logits_0.001.pt')
-#                 print("save model:{}\n".format(best_accuracy))
+        if accuracy >= best_accuracy:
+            if accuracy > best_accuracy or test_cls_loss < best_cls_loss:
+                best_cls_loss = test_cls_loss
+                best_accuracy = accuracy 
+                torch.save(model.state_dict(), f'crop_best_logits_0.001.pt')
+                print("save model:{}\n".format(best_accuracy))
 
-#         print("Epoch:{0:3d}\t|train_loss:{1:15f}\t|cls_loss:{2:6f}\t|Accuarcy:{3:6f}\t".format(epoch + 1, cls_loss, test_cls_loss, accuracy))
+        print("Epoch:{0:3d}\t|train_loss:{1:15f}\t|cls_loss:{2:6f}\t|Accuarcy:{3:6f}\t".format(epoch + 1, cls_loss, test_cls_loss, accuracy))
 
 
 # %%

@@ -25,13 +25,13 @@ Use the following commands below:
 pip install -u opents
 ```
 
-## example
+## Examples
+|Method   |Crop(UCR)|CBF(UCR)|
+|---------| ------- |--------|
+|Baseline |[Go](https://github.com/PyOpenTS/PyOpenTS/blob/main/examples/demo_benchmark.py)       |        |
+|LogitNorm|         |[Go](https://github.com/PyOpenTS/PyOpenTS/blob/main/examples/demo_logitnorm.py)    |
+|OpenMax  |[Go](https://github.com/PyOpenTS/PyOpenTS/blob/main/examples/demo_openmax.py)       |        |
 
-```python
-import opents
-# load ucr and generate dataloader
-x_train, y_train, x_test, y_test = opents.datasets.UCRDataset(dataset_name="Chinatown",dataset_root_path='UCR')
-```
 
 ## Future Plans
 
