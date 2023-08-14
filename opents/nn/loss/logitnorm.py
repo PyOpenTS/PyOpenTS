@@ -3,6 +3,20 @@ import torch
 import torch.nn.functional as F
 
 class LogitNorm(nn.Module):
+    """
+    LogitNorm Class: A PyTorch module to compute the logit normalization of the input tensor followed by
+    the cross entropy loss.
+
+    :param device: torch.device, The device on which the module will run.
+    :param t: float, optional, default=1.0, The temperature parameter for scaling the logits.
+
+    Examples:
+    ---------
+    >>> logit_norm = LogitNorm(device=torch.device('cpu'))
+    >>> x = torch.randn(16, 10)
+    >>> labels = torch.randint(0, 10, (16,))
+    >>> loss = logit_norm(x, labels)
+    """
     def __init__(self, device, t=1.0):
         super(LogitNorm, self).__init__()
         self.device = device

@@ -21,13 +21,15 @@ pip install -u opents
 ```
 
 ## example
-
-```python
-import opents
-# load ucr and generate dataloader
-ucr_dataset = opents.datasets.UCRDataset(dataset_name="Chinatown",dataset_root_path='UCR')
-x_train, y_train, x_test, y_test = ucr_dataset.load()
-```
++----------+-----------------------------------------------------------------------------------+
+| Method   |                                                                         Link      |
++==========+===================================================================================+
+| Baseline | `Go <https://github.com/PyOpenTS/PyOpenTS/blob/main/examples/demo_benchmark.py>`_ |
++----------+-----------------------------------------------------------------------------------+
+| LogitNorm| `Go <https://github.com/PyOpenTS/PyOpenTS/blob/main/examples/demo_logitnorm.py>`_ |
++----------+-----------------------------------------------------------------------------------+
+| OpenMax  | `Go <https://github.com/PyOpenTS/PyOpenTS/blob/main/examples/demo_openmax.py>`_   |
++----------+-----------------------------------------------------------------------------------+
 
 ## Future Plans
 

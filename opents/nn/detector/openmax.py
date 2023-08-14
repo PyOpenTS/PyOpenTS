@@ -154,7 +154,7 @@ def compute_mavs_and_dists(num_classes, train_dataloader, device, model):
             scores.append(torch.cat(score_list).cpu().numpy())
         else:
             scores.append([])
-    # mavs: mean scores
+    # mavs: mean scores(every score in scores has been successfully predicted in the right labels which have all label)
     # [1, 15](1, channel)
     mavs = []
     for score in scores:

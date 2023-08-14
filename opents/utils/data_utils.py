@@ -8,6 +8,7 @@ import random
 from sklearn.model_selection import train_test_split
 import torch
 from sklearn.preprocessing import LabelEncoder
+import math
 
 DEFAULT_DATASETS_ROOT = "data"
 
@@ -76,7 +77,7 @@ def get_dataset_root_path(dataset_root_path=None, dataset_name=None, datasets_na
         else:
             print("the dataset is not contain in our contain, please use the Dataset command")
     else:
-        print(dataset_name + "is available")
+        print(dataset_name + " is available")
     return dataset_root_path
 
 def data_file_type(dataset_name,dataset_root_path=None, datasets_root_name=None, all_file_path=None):
@@ -128,10 +129,8 @@ class RandomSplitOpenDataset:
     """
     def __init__(
             self,
-            x_train,
-            y_train,
-            x_test,
-            y_test,
+            x_all,
+            y_all,
             train_size_rate=0.3,
             test_size_rate=0.3,
             open_label_rate=0.5,
@@ -140,10 +139,8 @@ class RandomSplitOpenDataset:
             open_random_state=42
             ):
         
-        self.x_train = x_train
-        self.y_train = y_train
-        self.x_test = x_test
-        self.y_test = y_test
+        self.x_all = x_all
+        self.y_all = y_all
         self.train_size_rate = train_size_rate
         self.test_size_rate = test_size_rate
         self.open_label_rate = open_label_rate
@@ -151,7 +148,7 @@ class RandomSplitOpenDataset:
         self.test_random_state = test_random_state
         self.open_random_state = open_random_state
         
-        self.x_train, self.y_train, self.x_test, self.y_test = x_train.numpy(), y_train.numpy(), x_test.numpy(), y_test.numpy()
+        self.all_features, self.all_labels= x_all.numpy(), y_all.numpy()
 
     def load(self):
         """
@@ -160,15 +157,14 @@ class RandomSplitOpenDataset:
         Returns:
             torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor: Tensors containing the input features and labels for the training and testing sets.
         """
-        self.all_features = np.concatenate([self.x_train, self.x_test], axis=0)
-        self.all_labels = np.concatenate([self.y_train, self.y_test], axis=0)
+
         # Get unique labels and calculate the number of labels to select for the test set
         unique_labels = np.unique(self.all_labels)
-        y_open_nums = int(len(unique_labels) * self.open_label_rate)
+        y_open_nums = int(math.ceil(len(unique_labels) * self.open_label_rate))
 
-        # if the number of y_open is 0, it indicates that the dataset has not open data.
-        if y_open_nums == 0:
-            raise ValueError("The number of open label data is 0, please change the percentage.")
+        # # if the number of y_open is 0, it indicates that the dataset has not open data.
+        # if y_open_nums == 0:
+        #     raise ValueError("The number of open label data is 0, please change the percentage.")
 
         random.seed(self.train_random_state)
         # choose the y_open and unselected_labels in y_all. the labels in the y_open and unselected_labels are unique. 
@@ -189,6 +185,27 @@ class RandomSplitOpenDataset:
         return x_train, y_train, x_val, y_val, x_test, y_test
         
 class RandomSplitOpenAllDataset(RandomSplitOpenDataset):
+    """
+    A dataset class that extends the functionality of RandomSplitOpenDataset by introducing a new partition 
+    of the test dataset. This partition specifically contains samples with labels that are part of the "open" set.
+
+    Attributes:
+        - All attributes inherited from RandomSplitOpenDataset.
+
+    Methods:
+        - __init__: Constructor method.
+        - load: Returns the training and test datasets, with an additional partition 
+                of the test dataset containing only the "open" labeled data points.
+
+    Usage:
+    ```python
+    dataset = RandomSplitOpenAllDataset(x_train, y_train, x_test, y_test, train_size_rate, open_label_rate)
+    x_train, y_train, x_test, y_test, last_x_test, last_y_test = dataset.load()
+    ```
+
+    Note:
+        Ensure RandomSplitOpenDataset is defined in the current environment and its `load` method is functional.
+    """
     def __init__(self, x_train, y_train, x_test, y_test, train_size_rate, open_label_rate, train_random_state=42, open_random_state=42):
         super().__init__(x_train, y_train, x_test, y_test, train_size_rate, open_label_rate, train_random_state, open_random_state)
     
@@ -208,7 +225,20 @@ class RandomSplitOpenAllDataset(RandomSplitOpenDataset):
 
 
 def relabel_from_zero(*args):
-    
+    """
+    Relabels input labels starting from zero. 
+
+    This can be useful in scenarios where labels are not consecutive or start from a non-zero 
+    number, but a consecutive zero-based labeling is desired.
+
+    Args:
+    - *args (tuple): A variable-length argument tuple. Can be one or two torch.Tensors 
+      representing the labels to be relabeled.
+
+    Returns:
+    - torch.Tensor or Tuple[torch.Tensor, torch.Tensor]: Relabeled labels. If one tensor is 
+      passed, one is returned. If two tensors are passed, a tuple of two tensors is returned.
+    """ 
     if len(args) > 2:
         raise ValueError("Too many arguments. This function expects 1 or 2 arguments.") 
     encoder = LabelEncoder()
@@ -260,3 +290,25 @@ def preprocess_test_labels(y_test, y_train, real_label):
     y_test_preprocessed = torch.tensor([relabel_test(y) for y in y_test])
 
     return y_test_preprocessed
+
+def delete_label_and_corresponding_data(x_train, y_train, labels):
+    """
+    Remove specific data points from the dataset based on their labels.
+
+    Args:
+    x_train (torch.Tensor): Input features from the training dataset.
+    y_train (torch.Tensor): Labels from the training dataset.
+    labels (int or list): Label or list of labels to be removed from the dataset.
+
+    Returns:
+    torch.Tensor, torch.Tensor: Filtered input features and labels without the specified label(s).
+    """
+    all_labels = torch.unique(y_train)
+    new_x_train, new_y_train = [], []
+    for i, j in zip(y_train, x_train):
+        if i != labels:
+            new_x_train.append(j)
+            new_y_train.append(i)
+    new_x_train, new_y_train = torch.stack(new_x_train), torch.stack(new_y_train)
+    return new_x_train, new_y_train
+

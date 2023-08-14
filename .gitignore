@@ -20,6 +20,14 @@ test.py
 *.pt
 example/demo_logitnorm_modified.py
 example/demo_logitnorm_others.py
+examples/demo_benchmark
+*.txt
+examples/demo_benchmark
+examples/demo_logitnorm
+examples/demo_openmax
+
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

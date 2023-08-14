@@ -26,12 +26,10 @@ class Residual(nn.Module):
 
 class InitializedLinear(nn.Linear):
     def reset_parameters(self) -> None:
-        print("init linear ...")
         nn.init.xavier_normal_(self.weight)
         nn.init.zeros_(self.bias)
 
 class InitializedConv1d(nn.Conv1d):
     def reset_parameters(self) -> None:
-        print("init Conv1d ...")
         nn.init.xavier_normal_(self.weight)
         nn.init.zeros_(self.bias)

@@ -11,23 +11,39 @@ import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
 import numpy as np
 from opents.nn.detector import compute_mavs_and_dists, weibull, openmax
+import argparse
 
-device = torch.device('cuda:9' if torch.cuda.is_available() else 'cpu')
-cudnn.benchmark = True
+# add parser in the file
+parser = argparse.ArgumentParser()
+parser.add_argument("--dataset_name", type=str, default='ACSF1', help="dataset name")
+parser.add_argument("--dataset_root_path", type=str, default='UCR', help="the dataset path, for example:UCR/Crop, you should chose the dataset root path: UCR")
+parser.add_argument("--datasets_name", type=str, default='ucr', help="")
+parser.add_argument('--lr', type=float, default=0.01, help="learning rate")
+parser.add_argument('--epochs', type=int, default=1000, help="the num of training epochs")
+parser.add_argument('--device', type=str, default='cuda:6' if torch.cuda.is_available() else 'cpu')
+parser.add_argument('--weibull_tail_size', type=int, default=3, help="weibull tail size")
+parser.add_argument('--weibull_alpha', type=int, default=3, help="weibull alpha")
+parser.add_argument('--weibull_threshold', type=float, default=0.7, help="weibull threshold")
+args = parser.parse_args()
 
-# model parameters
-lr = 0.001
+cudnn.benchmark = False
+cudnn.deterministic = True
 
-# weibull parameters
-weibull_tail_size = 20
-weibull_alpha = 3
-weibull_threshold = 0.9
+
 
 # load the dataset from ucr, TSDataset fullfill the origin dataset structure.
-x_train, y_train, x_test, y_test = TSDataset(dataset_name='Crop', dataset_root_path='UCR', datasets_name='ucr').load()
+x_train, y_train, x_test, y_test = TSDataset(dataset_name=args.dataset_name, dataset_root_path=args.dataset_root_path, datasets_name=args.datasets_name).load()
+
+# merge x_train and x_test, merge y_train and y_test
+x_train, y_train, x_test, y_test = x_train.numpy(), y_train.numpy(), x_test.numpy(), y_test.numpy()
+x_all = np.concatenate([x_train, x_test], axis=0)
+y_all = np.concatenate([y_train, y_test], axis=0)
+
+# change x_all , y_all to tensor
+x_all, y_all = torch.tensor(x_all), torch.tensor(y_all)
 
 # make the trainset and testset openly, random split the dataset and choose our dataest structure.
-x_train, y_train, x_val, y_val, x_test, y_test = RandomSplitOpenDataset(x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test, train_size_rate=0.6, test_size_rate=0.2, open_label_rate=0.3, train_random_state=42, open_random_state=42).load()
+x_train, y_train, x_val, y_val, x_test, y_test = RandomSplitOpenDataset(x_all=x_all, y_all=y_all, train_size_rate=0.6, test_size_rate=0.2, open_label_rate=0.3, train_random_state=42, open_random_state=42).load()
 
 # y_train and y_val labels.
 real_label = torch.unique(y_train)
@@ -68,14 +84,14 @@ test_dataloader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffl
 
 # construct fcn model 
 model = FCN(in_channels=x_train.shape[-1], unit_list=[64, 128, 256], out_channels=num_classes, num_classes=num_classes, num_cnns=3, stride=1, padding="same")
-model.to(device)
+model.to(args.device)
 
 
 # loss funciton
 criterion = nn.CrossEntropyLoss()
 
 # optimizer 
-optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
 # accuracy and loss metrics
 metric_dict = {
@@ -84,23 +100,22 @@ metric_dict = {
 }
 
 metric_dict = {
-    metric_name: metric.to(device) for metric_name, metric in metric_dict.items()
+    metric_name: metric.to(args.device) for metric_name, metric in metric_dict.items()
 }
 
 # main loop
-num_epochs = 5000
 best_accuracy = 0.0
 best_cls_loss = float('inf')
 
-for epoch in tqdm(range(num_epochs)):
+for epoch in tqdm(range(args.epochs)):
 
     model.train()
     for batch_inputs, batch_labels in train_dataloader:
-        batch_inputs = batch_inputs.to(device)
-        batch_labels = batch_labels.to(device)
+        batch_inputs = batch_inputs.to(args.device)
+        batch_labels = batch_labels.to(args.device)
 
-        logit = model(batch_inputs)
-        cls_losses = criterion(logit, batch_labels)
+        logits = model(batch_inputs)
+        cls_losses = criterion(logits, batch_labels)
         cls_loss = cls_losses.mean()
 
         l2_loss = 0.0
@@ -115,19 +130,19 @@ for epoch in tqdm(range(num_epochs)):
         optimizer.step()
 
 # model evaluation
-    if epoch % 100 == 0 and epoch != 0:
+    if epoch % 10 == 0 and epoch != 0:
 
         scores, labels = [], []
         model.eval()
         with torch.no_grad():
 
             for batch_inputs, batch_labels in test_dataloader:
-                batch_inputs = batch_inputs.to(device)
-                batch_labels = batch_labels.to(device)
+                batch_inputs = batch_inputs.to(args.device)
+                batch_labels = batch_labels.to(args.device)
 
                 logits = model(batch_inputs)
 
-                scores.append(logit)
+                scores.append(logits)
                 labels.append(batch_labels)
 
         scores = torch.cat(scores, dim=0).detach().cpu().numpy()
@@ -138,10 +153,10 @@ for epoch in tqdm(range(num_epochs)):
 
         # fit the weibull distribution
         # mavs: mean activation vectors; dist: distribution
-        mavs, dists = compute_mavs_and_dists(num_classes=num_classes, train_dataloader=train_dataloader, device=device, model=model)
+        mavs, dists = compute_mavs_and_dists(num_classes=num_classes, train_dataloader=train_dataloader, device=args.device, model=model)
         categories = list(range(0, num_classes))
 
-        weibull_model = weibull(means=mavs, dists=dists, categories=categories, tailsize=weibull_tail_size, distance_type='euclidean')
+        weibull_model = weibull(means=mavs, dists=dists, categories=categories, tailsize=args.weibull_tail_size, distance_type='euclidean')
 
         all_mcv_filled = True
         for mcv in mavs:
@@ -151,10 +166,10 @@ for epoch in tqdm(range(num_epochs)):
             pred_softmax, pred_softmax_threshold, pred_openmax = [], [], []
             score_softmax, score_openmax = [], []
             for score in scores:
-                so, ss = openmax(weibull_model, categories, score, 0.5, weibull_alpha, "euclidean")  # openmax_prob, softmax_prob
+                so, ss = openmax(weibull_model, categories, score, 0.5, args.weibull_alpha, "euclidean")  # openmax_prob, softmax_prob
                 pred_softmax.append(np.argmax(ss))
-                pred_softmax_threshold.append(np.argmax(ss) if np.max(ss) >= weibull_threshold else num_classes)
-                pred_openmax.append(np.argmax(so) if np.max(so) >= weibull_threshold else num_classes)
+                pred_softmax_threshold.append(np.argmax(ss) if np.max(ss) >= args.weibull_threshold else num_classes)
+                pred_openmax.append(np.argmax(so) if np.max(so) >= args.weibull_threshold else num_classes)
                 score_softmax.append(ss)
                 score_openmax.append(so)
             print("openmax prediction:\n", pred_openmax)
