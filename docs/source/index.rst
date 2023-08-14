@@ -28,13 +28,15 @@ Use the following commands below::
 
 Example
 -------
-
-.. code-block:: python
-
-    import opents
-    # load ucr and generate dataloader
-    ucr_dataset = opents.datasets.UCRDataset(dataset_name="Chinatown",dataset_root_path='UCR')
-    x_train, y_train, x_test, y_test = ucr_dataset.load()
++----------+-----------------------------------------------------------------------------------+
+| Method   |                                                                         Link      |
++==========+===================================================================================+
+| Baseline | `Go <https://github.com/PyOpenTS/PyOpenTS/blob/main/examples/demo_benchmark.py>`_ |
++----------+-----------------------------------------------------------------------------------+
+| LogitNorm| `Go <https://github.com/PyOpenTS/PyOpenTS/blob/main/examples/demo_logitnorm.py>`_ |
++----------+-----------------------------------------------------------------------------------+
+| OpenMax  | `Go <https://github.com/PyOpenTS/PyOpenTS/blob/main/examples/demo_openmax.py>`_   |
++----------+-----------------------------------------------------------------------------------+
 
 Future Plans
 ------------
@@ -46,15 +48,16 @@ How to Get Help
 
 If you encounter any problems during use, feel free to submit them to Issues. We also welcome your suggestions for improving PyOpenTS. We hope that PyOpenTS can become a powerful assistant for you in dealing with time series problems.
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Content:
+Package Reference
+-----------------
+.. _Packages:
 
-   modules
-   opents
-   opents.data
-   opents.datasets
-   opents.evaluate
-   opents.nn
-   opents.nn.models
-   opents.utils
+.. toctree::
+   :glob:
+   :maxdepth: 2
+
+   modules/datasets
+   modules/nn
+   modules/utils/data_utils
+   .. automodule:: opents
+    :members:
